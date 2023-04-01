@@ -10,7 +10,7 @@ import api from "../utils/api";
 import { CurrentUserContext } from "../contexts/CurrentUserContext";
 import ConfirmDeleteCard from "./ConfirmDeleteCard";
 
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import Register from "./Register";
 import Login from "./Login";
 import InfoTooltip from "./InfoTooltip";
@@ -70,10 +70,10 @@ function App() {
     auth
       .login(email, password)
       .then((res) => {
-        console.log(res);
         if (res.token) {
           setLoggedIn(true);
           setUserEmail(email);
+          localStorage.setItem("jwt", res.token);
           navigate("/", { replace: true });
         }
       })
@@ -177,15 +177,17 @@ function App() {
   };
 
   React.useEffect(() => {
-    Promise.all([api.getUserInfo(), api.getInitialCards()])
-      .then(([dataUser, dataCard]) => {
-        setCurrentUser(dataUser);
-        setCards(dataCard);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, []);
+    if (loggedIn) {
+      Promise.all([api.getUserInfo(), api.getInitialCards()])
+        .then(([dataUser, dataCard]) => {
+          setCurrentUser(dataUser);
+          setCards(dataCard);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    }
+  }, [loggedIn]);
 
   React.useEffect(() => {
     checkToken();
@@ -241,6 +243,16 @@ function App() {
           <Route
             path="/sign-in"
             element={<Login handleSubmitLogin={handleSubmitLogin} />}
+          />
+          <Route
+            path="*"
+            element={
+              loggedIn ? (
+                <Navigate to="/" replace />
+              ) : (
+                <Navigate to="/sign-in" replace />
+              )
+            }
           />
         </Routes>
         <Footer />
